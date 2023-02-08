@@ -1,0 +1,10 @@
+- name: get device volume to mount
+  shell: fdisk -l|grep -v nvme0n1 | grep nvme | cut -d ":" -f 1| cut -d "/" -f 3
+  register: psk
+  run_once: true
+
+- set_fact: 
+    device_name="/dev/{{ psk.stdout }}"
+
+- debug: var=device_name
+  run_once: true

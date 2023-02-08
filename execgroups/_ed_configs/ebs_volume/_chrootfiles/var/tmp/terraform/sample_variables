@@ -1,0 +1,4 @@
+export TF_VAR_availability_zone=ap-southeast-1b
+export TF_VAR_aws_default_region=ap-southeast-1
+export TF_VAR_volume_name=test
+

@@ -1,0 +1,13 @@
+desc: The stack inserts a single item into an existing dynamodb table.
+release: 0.0.1
+categories: 
+   - aws
+   - cloud
+   - public_cloud
+tags:
+   - dynamodb
+   - database
+   - db
+   - nosql
+   - aws
+   - infrastructure

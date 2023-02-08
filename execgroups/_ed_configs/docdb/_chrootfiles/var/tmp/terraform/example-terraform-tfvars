@@ -1,0 +1,3 @@
+name = "sample-docdb-dev-01"
+subnet_ids = [ "subnet-0bf54cd08046a", "subnet-0ace43442bb" ]
+security_group_ids = [ "sg-0e370b2bc2298", "sg-0e58d39796ecb" ]

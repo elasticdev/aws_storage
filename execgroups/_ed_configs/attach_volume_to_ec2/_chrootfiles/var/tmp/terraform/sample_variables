@@ -1,0 +1,4 @@
+export TF_VAR_aws_default_region=ap-southeast-1
+export TF_VAR_instance_id=i-0ffdc50fa43ca175d
+export TF_VAR_volume_id=vol-073ec21f73f799c66
+

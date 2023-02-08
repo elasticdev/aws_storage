@@ -1,0 +1,36 @@
+{
+  "version": 4,
+  "terraform_version": "0.14.10",
+  "serial": 1,
+  "lineage": "f0adabf0-4544-cfaa-70cf-174d8e0edd8c",
+  "outputs": {},
+  "resources": [
+    {
+      "mode": "managed",
+      "type": "aws_ssm_parameter",
+      "name": "secret",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "allowed_pattern": "",
+            "arn": "arn:aws:ssm:us-east-2:109602738875:parameter/dev/database/mysql/password",
+            "description": "The parameter description",
+            "id": "/dev/database/mysql/password",
+            "key_id": "alias/aws/ssm",
+            "name": "/dev/database/mysql/password",
+            "overwrite": null,
+            "tags": null,
+            "tier": "Standard",
+            "type": "SecureString",
+            "value": "secret123",
+            "version": 1
+          },
+          "sensitive_attributes": [],
+          "private": "bnVsbA=="
+        }
+      ]
+    }
+  ]
+}

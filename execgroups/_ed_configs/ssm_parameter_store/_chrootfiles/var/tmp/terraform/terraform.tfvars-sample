@@ -1,0 +1,3 @@
+aws_default_region = "us-east-2"
+ssm_key = "/dev/database/mysql/password"
+ssm_value = "secret123"

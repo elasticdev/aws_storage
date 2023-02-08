@@ -1,0 +1,18 @@
+desc: The stack creates a s3 bucket in aws.
+release: 0.0.1
+categories: 
+   - aws
+   - ec2
+   - buckets
+   - s3
+   - cloud
+   - public_cloud
+tags:
+   - ssm
+   - parameter
+   - parameter_store
+   - ec2
+   - buckets
+   - s3
+   - aws
+   - infrastructure

@@ -1,0 +1,19 @@
+desc: The stack that creates an RDS on AWS.
+release: 0.0.1
+categories: 
+   - aws
+   - rds
+   - database
+   - cloud
+   - public_cloud
+   - terraform
+tags:
+   - terraform
+   - rds
+   - database
+   - aws
+   - infrastructure
+   - featured_infrastructure
+   - featured
+   - cloud
+   - public_cloud

@@ -1,0 +1,3 @@
+cloud_tags       = { "yo":"mama"}
+aws_default_region = "eu-west-1"
+dynamodb_name    = "test-dynamodb"

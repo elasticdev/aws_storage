@@ -1,0 +1,13 @@
+desc: The stack that creates an ebs volume
+release: 0.0.1
+categories: 
+   - aws
+   - ec2
+   - cloud
+   - public_cloud
+tags:
+   - ec2
+   - storage
+   - ebs
+   - aws
+   - infrastructure

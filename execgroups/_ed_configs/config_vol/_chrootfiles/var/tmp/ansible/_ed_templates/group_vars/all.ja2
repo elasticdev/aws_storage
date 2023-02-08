@@ -1,0 +1,5 @@
+---
+os_user: ubuntu
+device_path: {{ device_path }}
+fstype: {{ fstype }}
+mountpoint: {{ mountpoint }}

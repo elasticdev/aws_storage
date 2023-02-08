@@ -1,0 +1,6 @@
+---
+os_user: ubuntu
+device_path: /dev/nvme1n1
+fstype: xfs
+mountpoint: /var/lib/mongodb
+

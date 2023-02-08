@@ -1,0 +1,16 @@
+desc: The stack formats and optional mounts ebs volume
+release: 0.0.1
+categories: 
+   - aws
+   - ec2
+   - cloud
+   - storage
+   - public_cloud
+tags:
+   - ec2
+   - storage
+   - mount
+   - format
+   - ebs
+   - aws
+   - infrastructure

@@ -1,0 +1,8 @@
+---
+- name: Mount volume
+  mount:
+    name: "{{ mountpoint }}"
+    src: "{{ device_name }}"
+    fstype: "{{ fstype }}"
+    opts: noatime
+    state: mounted

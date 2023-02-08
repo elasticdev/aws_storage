@@ -1,0 +1,10 @@
+---
+- name: Format volume
+  hosts: all
+  user: "{{ os_user }}"
+  become: true
+  become_method: sudo
+  gather_facts: true
+  roles:
+    - ../roles/get_vol
+    - ../roles/format
