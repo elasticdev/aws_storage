@@ -11,7 +11,7 @@ def run(stackargs):
     stack.parse.add_required(key="aws_default_region",default="us-east-1")
 
     # Add shelloutconfig dependencies
-    stack.add_shelloutconfig('elasticdev:::aws::ecr_repo',"ecr_repo_script")
+    stack.add_shelloutconfig('elasticdev:::aws_storage::ecr_repo',"ecr_repo_script")
 
     # Initialize Variables in stack
     stack.init_variables()
