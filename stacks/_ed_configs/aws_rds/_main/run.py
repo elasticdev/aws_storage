@@ -11,6 +11,9 @@ class EdResourceSettings(object):
         self.resource_values = { "aws_default_region":self.stack.aws_default_region,
                                  "region":self.stack.aws_default_region }
 
+        self.resource_values["rds_name"] = self.stack.rds_name
+        self.resource_values["name"] = self.stack.rds_name
+
         return self.resource_values
 
     def _get_docker_settings(self):
@@ -60,11 +63,11 @@ class EdResourceSettings(object):
         if self.stack.cloud_tags_hash: 
             tf_vars["cloud_tags"] = json.dumps(self.stack.b64_decode(self.stack.cloud_tags_hash))
 
-        resource_keys = [ "table_name",
-                          "id",
-                          "timeout" ]
+        resource_keys = [ "arn",
+                          "id"
+                          ]
         
-        resource_keys_maps = { "name":"table_name" }
+        resource_keys_maps = { "db_id":"arn" }
 
         self.tf_settings = { "tf_vars":tf_vars,
                              "terraform_type":self.stack.terraform_type,
@@ -141,7 +144,7 @@ def run(stackargs):
     stack.set_variable("provider","aws")
     stack.set_variable("stateful_id",stack.random_id())
 
-    set_variable("terraform_type","aws_dynamodb_table")
+    stack.set_variable("terraform_type","aws_db_instance")
     stack.set_variable("resource_type","rds")
     stack.set_variable("resource_name",stack.rds_name)
 
