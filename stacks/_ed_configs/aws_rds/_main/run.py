@@ -1,7 +1,91 @@
-def run(stackargs):
+import json
 
-    import json
-    import os
+class EdResourceSettings(object):
+
+    def __init__(self,**kwargs):
+
+        self.stack = kwargs["stack"]
+
+    def _get_resource_values_to_add(self):
+    
+        self.resource_values = { "aws_default_region":self.stack.aws_default_region,
+                                 "region":self.stack.aws_default_region }
+
+        return self.resource_values
+
+    def _get_docker_settings(self):
+    
+        env_vars = { "method": "create",
+                     "aws_default_region": self.stack.aws_default_region,
+                     "stateful_id":self.stack.stateful_id,
+                     "resource_tags": "{},{},{}".format(self.stack.resource_type, 
+                                                        self.stack.resource_name,
+                                                        self.stack.aws_default_region),
+                     "name": self.stack.resource_name }
+    
+        include_env_vars_keys = [ "aws_access_key_id",
+                                  "aws_secret_access_key" ]
+    
+        self.docker_settings = { "env_vars":env_vars,
+                                 "include_env_vars_keys":include_env_vars_keys }
+
+        return self.docker_settings
+    
+    def _get_tf_settings(self):
+
+        tf_vars = { "aws_default_region": self.stack.aws_default_region }
+        tf_vars = {"rds_name":self.stack.rds_name}
+        tf_vars["db_name"] = self.stack.db_name
+        tf_vars["db_subnet_name"] = self.stack.db_subnet_name
+        tf_vars["rds_master_username"] = self.stack.master_username
+        tf_vars["rds_master_password"] = self.stack.master_password
+        tf_vars["security_group_ids"] = self.stack.sg_id
+        tf_vars["subnet_ids"] = self.stack.subnet_ids
+        tf_vars["allocated_storage"] = self.stack.allocated_storage
+        tf_vars["engine"] = self.stack.engine
+        tf_vars["engine_version"] = self.stack.engine_version
+        tf_vars["instance_class"] = self.stack.instance_class
+        tf_vars["multi_az"] = self.stack.multi_az
+        tf_vars["storage_type"] = self.stack.storage_type
+        tf_vars["publicly_accessible"] = self.stack.publicly_accessible
+        tf_vars["storage_encrypted"] = self.stack.storage_encrypted
+        tf_vars["allow_major_version_upgrade"] = self.stack.allow_major_version_upgrade
+        tf_vars["auto_minor_version_upgrade"] = self.stack.auto_minor_version_upgrade
+        tf_vars["skip_final_snapshot"] = self.stack.skip_final_snapshot
+        tf_vars["port"] = self.stack.port
+        tf_vars["backup_retention_period"] = self.stack.backup_retention_period
+        tf_vars["backup_window"] = self.stack.backup_window
+        tf_vars["maintenance_window"] = self.stack.maintenance_window
+
+        if self.stack.cloud_tags_hash: 
+            tf_vars["cloud_tags"] = json.dumps(self.stack.b64_decode(self.stack.cloud_tags_hash))
+
+        resource_keys = [ "table_name",
+                          "id",
+                          "timeout" ]
+        
+        resource_keys_maps = { "name":"table_name" }
+
+        self.tf_settings = { "tf_vars":tf_vars,
+                             "terraform_type":self.stack.terraform_type,
+                             "tfstate_raw": "True",
+                             "resource_keys_maps": resource_keys_maps,
+                             "resource_keys": resource_keys }
+
+        return self.tf_settings
+
+    def get(self):
+
+        ed_resource_settings = { "tf_settings":self._get_tf_settings(),
+                                 "docker_settings":self._get_docker_settings(),
+                                 "resource_values":self._get_resource_values_to_add(),
+                                 "resource_type":self.stack.resource_type,
+                                 "provider":self.stack.provider
+                                 }
+
+        return self.stack.b64_encode(ed_resource_settings)
+
+def run(stackargs):
 
     # instantiate authoring stack
     stack = newStack(stackargs)
@@ -43,7 +127,7 @@ def run(stackargs):
     stack.parse.add_optional(key="publish_to_saas",default="null")  # this is true, this will overide publish_creds
 
     # Add execgroup
-    stack.add_execgroup("elasticdev:::aws_storage::rds")
+    stack.add_execgroup("elasticdev:::aws_storage::rds","cloud_resource")
 
     # add substacks
     stack.add_substack('elasticdev:::publish_rds_info')
@@ -54,7 +138,12 @@ def run(stackargs):
     stack.init_substacks()
 
     # set variables
+    stack.set_variable("provider","aws")
+    stack.set_variable("stateful_id",stack.random_id())
+
+    set_variable("terraform_type","aws_dynamodb_table")
     stack.set_variable("resource_type","rds")
+    stack.set_variable("resource_name",stack.rds_name)
 
     # automatically name the db_subnet_name
     stack.set_variable("db_subnet_name","{}-subnet".format(stack.rds_name))
@@ -70,65 +159,25 @@ def run(stackargs):
     elif not stack.master_password:
         stack.set_variable("master_password",stack.random_id(size=20))
 
-    # stack.logger.debug("DB_MASTER_USERNAME {}".format(stack.master_username))
-    # stack.logger.debug("DB_MASTER_PASSWORD {}".format(stack.master_password))
+    _ed_resource_settings = EdResourceSettings(stack=stack)
 
-    # Execute execgroup
-    env_vars = {"TF_VAR_rds_name":stack.rds_name}
-    env_vars["TF_VAR_db_name"] = stack.db_name
-    env_vars["TF_VAR_db_subnet_name"] = stack.db_subnet_name
-    env_vars["TF_VAR_rds_master_username"] = stack.master_username
-    env_vars["TF_VAR_rds_master_password"] = stack.master_password
+    env_vars = { "STATEFUL_ID":stack.stateful_id,
+                 "METHOD":"create" }
 
-    env_vars["TF_VAR_security_group_ids"] = stack.sg_id
-    env_vars["TF_VAR_subnet_ids"] = stack.subnet_ids
-
-    env_vars["TF_VAR_allocated_storage"] = stack.allocated_storage
-    env_vars["TF_VAR_engine"] = stack.engine
-    env_vars["TF_VAR_engine_version"] = stack.engine_version
-    env_vars["TF_VAR_instance_class"] = stack.instance_class
-    env_vars["TF_VAR_multi_az"] = stack.multi_az
-    env_vars["TF_VAR_storage_type"] = stack.storage_type
-    env_vars["TF_VAR_publicly_accessible"] = stack.publicly_accessible
-    env_vars["TF_VAR_storage_encrypted"] = stack.storage_encrypted
-    env_vars["TF_VAR_allow_major_version_upgrade"] = stack.allow_major_version_upgrade
-    env_vars["TF_VAR_auto_minor_version_upgrade"] = stack.auto_minor_version_upgrade
-    env_vars["TF_VAR_skip_final_snapshot"] = stack.skip_final_snapshot
-    env_vars["TF_VAR_port"] = stack.port
-    env_vars["TF_VAR_backup_retention_period"] = stack.backup_retention_period
-    env_vars["TF_VAR_backup_window"] = stack.backup_window
-    env_vars["TF_VAR_maintenance_window"] = stack.maintenance_window
-    env_vars["TF_VAR_aws_default_region"] = stack.aws_default_region
-
-    # cloud tags
-    if stack.cloud_tags_hash: 
-        env_vars["TF_VAR_cloud_tags"] = json.dumps(stack.b64_decode(stack.cloud_tags_hash))
-
-    env_vars["AWS_DEFAULT_REGION"] = stack.aws_default_region
-    env_vars["STATEFUL_ID"] = stack.stateful_id
-    env_vars["resource_type".upper()] = stack.resource_type
-    env_vars["RESOURCE_TAGS"] = "{},{},{}".format(stack.resource_type, stack.rds_name, stack.aws_default_region)
-
-    #env_vars["TF_TEMPLATE_VARS"] = ",".join(env_vars.keys())
-
+    env_vars["ed_resource_settings_hash".upper()] = _ed_resource_settings.get()
+    env_vars["aws_default_region".upper()] = stack.aws_default_region
     env_vars["docker_exec_env".upper()] = stack.docker_exec_env
-    env_vars["METHOD"] = "create"
+    env_vars["use_docker".upper()] = True
     env_vars["CLOBBER"] = True
-    if stack.use_docker: env_vars["use_docker".upper()] = True
-
-    docker_env_fields_keys = env_vars.keys()
-    docker_env_fields_keys.append("AWS_ACCESS_KEY_ID")
-    docker_env_fields_keys.append("AWS_SECRET_ACCESS_KEY")
-    docker_env_fields_keys.remove("METHOD")
-
-    env_vars["DOCKER_ENV_FIELDS"] = ",".join(docker_env_fields_keys)
 
     inputargs = {"display":True}
     inputargs["env_vars"] = json.dumps(env_vars)
-    inputargs["name"] = stack.rds_name
+    inputargs["name"] = stack.resource_name
     inputargs["stateful_id"] = stack.stateful_id
-    inputargs["human_description"] = "Creating RDS {}".format(stack.rds_name)
-    stack.rds.insert(**inputargs)
+    inputargs["human_description"] = "Creating name {} type {}".format(stack.resource_name,stack.resource_type)
+    inputargs["display_hash"] = stack.get_hash_object(inputargs)
+
+    stack.cloud_resource.insert(**inputargs)
 
     if stack.publish_creds or stack.publish_to_saas:
 

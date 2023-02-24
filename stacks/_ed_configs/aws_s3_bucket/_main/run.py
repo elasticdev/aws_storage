@@ -1,3 +1,115 @@
+import json
+
+class EdResourceSettings(object):
+
+    def __init__(self,**kwargs):
+
+        self.stack = kwargs["stack"]
+
+    def _get_resource_values_to_add(self):
+    
+        self.resource_values = { "aws_default_region":self.stack.aws_default_region,
+                                 "region":self.stack.aws_default_region }
+
+        if self.stack.enable_lifecycle and self.stack.expire_days:
+            self.resource_values["expire_days"] = str(self.stack.expire_days)
+
+        self.resource_values["name"] = self.stack.bucket
+
+        if self.stack.enable_lifecycle:
+            self.resource_values["enable_lifecycle"] = "true"
+
+        if self.stack.versioning:
+            self.resource_values["versioning"] = "true"
+
+        if self.stack.force_destroy:
+            self.resource_values["force_destroy"] = "true"
+            
+        if self.stack.enable_lifecycle and self.stack.noncurrent_version_expiration:
+            self.resource_values["noncurrent_version_expiration"] = str(self.stack.noncurrent_version_expiration)
+    
+        return self.resource_values
+
+    def _get_docker_settings(self):
+    
+        env_vars = { "method": "create",
+                     "aws_default_region": self.stack.aws_default_region,
+                     "stateful_id":self.stack.stateful_id,
+                     "resource_tags": "{},{},{}".format(self.stack.resource_type, 
+                                                        self.stack.resource_name,
+                                                        self.stack.aws_default_region),
+                     "name": self.stack.resource_name }
+    
+        include_env_vars_keys = [ "aws_access_key_id",
+                                  "aws_secret_access_key" ]
+    
+        self.docker_settings = { "env_vars":env_vars,
+                                 "include_env_vars_keys":include_env_vars_keys }
+
+        return self.docker_settings
+    
+    def _get_tf_settings(self):
+
+        '''
+        #_results["expire_days"] = resource["instances"][0]["attributes"]["lifecycle_rule"][0]["expiration"][0]["days"]
+        #_results["noncurrent_version_expiration"] = resource["instances"][0]["attributes"]["lifecycle_rule"][0]["noncurrent_version_expiration"][0]["days"]
+        #_results["encryption"] = resource["instances"][0]["attributes"]["server_side_encryption_configuration"][0]["rule"][0]["apply_server_side_encryption_by_default"][0]["sse_algorithm"]
+        #_results["bucket_versioning"] = resource["instances"][0]["attributes"]["versioning"][0]["enabled"]
+        '''
+    
+        tf_vars = { "aws_default_region": self.stack.aws_default_region }
+
+        tf_vars["bucket"] = self.stack.bucket
+        tf_vars["acl"] = self.stack.acl
+        tf_vars["aws_default_region"] = self.stack.aws_default_region
+
+        if self.stack.cloud_tags_hash: 
+            tf_vars["cloud_tags"] = json.dumps(self.stack.b64_decode(self.stack.cloud_tags_hash))
+
+        if self.stack.force_destroy:
+            tf_vars["force_destroy"] = "true"
+
+        if self.stack.versioning:
+            tf_vars["versioning"] = "true"
+            
+        if self.stack.enable_lifecycle:
+            tf_vars["enable_lifecycle"] = "true"
+        else:
+            tf_vars["enable_lifecycle"] = "false"
+
+        if self.stack.enable_lifecycle and self.stack.expire_days:
+            tf_vars["expire_days"] = str(self.stack.expire_days)
+
+        if self.stack.enable_lifecycle and self.stack.noncurrent_version_expiration:
+            tf_vars["noncurrent_version_expiration"] = str(self.stack.noncurrent_version_expiration)
+    
+        resource_keys = [ "server_side_encryption_configuration",
+                          "lifecycle_rule",
+                          "versioning",
+                          "arn",
+                          "id" ]
+
+        resource_keys_maps = { "id":"arn" }
+
+        self.tf_settings = { "tf_vars":tf_vars,
+                             "terraform_type":self.stack.terraform_type,
+                             "tfstate_raw": "True",
+                             "resource_keys_maps": resource_keys_maps,
+                             "resource_keys": resource_keys }
+
+        return self.tf_settings
+
+    def get(self):
+
+        ed_resource_settings = { "tf_settings":self._get_tf_settings(),
+                                 "docker_settings":self._get_docker_settings(),
+                                 "resource_values":self._get_resource_values_to_add(),
+                                 "resource_type":self.stack.resource_type,
+                                 "provider":self.stack.provider
+                                 }
+
+        return self.stack.b64_encode(ed_resource_settings)
+
 def run(stackargs):
 
     import json
@@ -22,7 +134,7 @@ def run(stackargs):
     stack.parse.add_optional(key="docker_exec_env",default="elasticdev/terraform-run-env:14")
 
     # Add execgroup
-    stack.add_execgroup("elasticdev:::aws_storage::buckets")
+    stack.add_execgroup("elasticdev:::aws_storage::buckets","cloud_resource")
     stack.add_substack('elasticdev:::ed_core::publish_resource')
 
     # Initialize Variables in stack
@@ -30,55 +142,32 @@ def run(stackargs):
     stack.init_execgroups()
     stack.init_substacks()
 
+    stack.set_variable("provider","aws")
+    stack.set_variable("stateful_id",stack.random_id())
+
+    stack.set_variable("terraform_type","aws_s3_bucket")
     stack.set_variable("resource_type","cloud_storage")
+    stack.set_variable("resource_name",stack.bucket)
 
-    env_vars = {"aws_default_region".upper(): stack.aws_default_region }
-    env_vars["stateful_id".upper()] = stack.stateful_id
-    env_vars["resource_type".upper()] = stack.resource_type
+    _ed_resource_settings = EdResourceSettings(stack=stack)
+
+    env_vars = { "STATEFUL_ID":stack.stateful_id,
+                 "METHOD":"create" }
+
+    env_vars["ed_resource_settings_hash".upper()] = _ed_resource_settings.get()
+    env_vars["aws_default_region".upper()] = stack.aws_default_region
     env_vars["docker_exec_env".upper()] = stack.docker_exec_env
-
-    env_vars["TF_VAR_bucket"] = stack.bucket
-    env_vars["TF_VAR_acl"] = stack.acl
-    env_vars["TF_VAR_aws_default_region"] = stack.aws_default_region
-
-    if stack.cloud_tags_hash: 
-        env_vars["TF_VAR_cloud_tags"] = json.dumps(stack.b64_decode(stack.cloud_tags_hash))
-
-    if stack.force_destroy:
-        env_vars["TF_VAR_force_destroy"] = "true"
-
-    if stack.versioning:
-        env_vars["TF_VAR_versioning"] = "true"
-        
-    if stack.enable_lifecycle:
-        env_vars["TF_VAR_enable_lifecycle"] = "true"
-    else:
-        env_vars["TF_VAR_enable_lifecycle"] = "false"
-
-    if stack.enable_lifecycle and stack.expire_days:
-        env_vars["TF_VAR_expire_days"] = str(stack.expire_days)
-
-    if stack.enable_lifecycle and stack.noncurrent_version_expiration:
-        env_vars["TF_VAR_noncurrent_version_expiration"] = str(stack.noncurrent_version_expiration)
-
-    env_vars["METHOD"] = "create"
-    env_vars["CLOBBER"] = True
-    env_vars["RESOURCE_TAGS"] = "{},{}".format(stack.resource_type,stack.aws_default_region)
     env_vars["use_docker".upper()] = True
-
-    docker_env_fields_keys = env_vars.keys()
-    docker_env_fields_keys.append("AWS_ACCESS_KEY_ID")
-    docker_env_fields_keys.append("AWS_SECRET_ACCESS_KEY")
-    docker_env_fields_keys.remove("METHOD")
-
-    env_vars["DOCKER_ENV_FIELDS"] = ",".join(docker_env_fields_keys)
+    env_vars["CLOBBER"] = True
 
     inputargs = {"display":True}
     inputargs["env_vars"] = json.dumps(env_vars)
-    inputargs["display"] = True
+    inputargs["name"] = stack.resource_name
     inputargs["stateful_id"] = stack.stateful_id
-    inputargs["human_description"] = "Create {} bucket {}".format(stack.resource_type,stack.bucket)
-    stack.buckets.insert(**inputargs)
+    inputargs["human_description"] = "Creating name {} type {}".format(stack.resource_name,stack.resource_type)
+    inputargs["display_hash"] = stack.get_hash_object(inputargs)
+
+    stack.cloud_resource.insert(**inputargs)
 
     if not stack.publish_to_saas: return stack.get_results()
 
@@ -103,4 +192,3 @@ def run(stackargs):
     stack.publish_resource.insert(display=True,**inputargs)
 
     return stack.get_results()
-

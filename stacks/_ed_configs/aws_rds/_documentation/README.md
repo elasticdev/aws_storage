@@ -4,7 +4,7 @@
 
 **Infrastructure**
 
-  - expects an existing VPC/security groups created by ED (e.g. elasticdev:::aws_vpc-simple)
+  - expects an existing VPC/security groups created by ED (e.g. elasticdev:::aws_vpc_simple)
 
 **Required**
 
