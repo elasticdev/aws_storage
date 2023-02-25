@@ -1,3 +1,54 @@
+import json
+
+class EdResourceSettings(object):
+
+    def __init__(self,**kwargs):
+
+        self.stack = kwargs["stack"]
+
+    def _get_resource_values_to_add(self):
+    
+        self.resource_values = { "aws_default_region":self.stack.aws_default_region,
+                                 "region":self.stack.aws_default_region }
+
+        self.resource_values["name"] = self.stack.resource_name
+
+        return self.resource_values
+
+    def _get_docker_settings(self):
+    
+        env_vars = { "method": "create",
+                     "aws_default_region": self.stack.aws_default_region,
+                     "stateful_id":self.stack.stateful_id,
+                     "resource_tags": "{},{},{}".format(self.stack.resource_type, 
+                                                        self.stack.resource_name,
+                                                        self.stack.aws_default_region),
+                     "name": self.stack.resource_name }
+    
+        include_env_vars_keys = [ "aws_access_key_id",
+                                  "aws_secret_access_key" ]
+    
+        self.docker_settings = { "env_vars":env_vars,
+                                 "include_env_vars_keys":include_env_vars_keys }
+
+        return self.docker_settings
+    
+    def _get_tf_settings(self):
+
+        tf_vars = { "aws_default_region": self.stack.aws_default_region }
+        tf_vars["aws_default_region"] = self.stack.aws_default_region
+        tf_vars["device_name"] = self.stack.device_name
+        tf_vars["instance_id"] = self.stack.instance_id
+        tf_vars["volume_id"] = self.stack.volume_id
+
+        if self.stack.cloud_tags_hash: 
+            tf_vars["cloud_tags"] = json.dumps(self.stack.b64_decode(self.stack.cloud_tags_hash))
+
+        resource_keys = [ "instance_id",
+                          "id" ]
+        
+        resource_keys_maps = { "ec2_instance_id":"instance_id" }
+
 def _determine_instance_id(stack):
 
     if stack.instance_id and stack.aws_default_region: return
@@ -78,7 +129,7 @@ def run(stackargs):
     # stack.add_shelloutconfig('elasticdev:::ansible::write_ssh_key')
 
     # Add execgroup
-    stack.add_execgroup("elasticdev:::aws_storage::attach_volume_to_ec2")
+    stack.add_execgroup("elasticdev:::aws_storage::attach_volume_to_ec2","cloud_resource")
     stack.add_execgroup("elasticdev:::aws_storage::config_vol")
 
     # Initialize Variables in stack
@@ -89,6 +140,10 @@ def run(stackargs):
     _determine_volume_id(stack)
 
     stack.set_variable("resource_type","ebs_volume_attach")
+    stack.set_variable("provider","aws")
+    stack.set_variable("stateful_id",stack.random_id())
+    stack.set_variable("resource_name","{}-{}".format(stack.hostmame,stack.volume_name))
+    stack.set_variable("terraform_type","aws_volume_attachment")
 
     if not stack.volume_id:
         msg = "Cannot determine volume_id to attach to instance"
@@ -98,43 +153,33 @@ def run(stackargs):
         msg = "Cannot determine instance_id to mount volume"
         stack.ehandle.NeedRtInput(message=msg)
 
-    # Call to create the server with shellout script
-    env_vars = {"AWS_DEFAULT_REGION":stack.aws_default_region}
-    env_vars["STATEFUL_ID"] = stack.random_id(size=10)
+    _ed_resource_settings = EdResourceSettings(stack=stack)
 
-    env_vars["TF_VAR_aws_default_region"] = stack.aws_default_region
-    env_vars["TF_VAR_device_name"] = stack.device_name
-    env_vars["TF_VAR_instance_id"] = stack.instance_id
-    env_vars["TF_VAR_volume_id"] = stack.volume_id
+    env_vars = { "STATEFUL_ID":stack.stateful_id,
+                 "METHOD":"create" }
 
-    env_vars["docker_exec_env".upper()] = stack.terraform_docker_exec_env
-    env_vars["resource_type".upper()] = stack.resource_type
-    env_vars["RESOURCE_TAGS"] = "{},{},{},{},{}".format("ebs","ebs_attach", "aws", stack.volume_id, stack.aws_default_region)
-    env_vars["METHOD"] = "create"
-    if stack.use_docker: env_vars["use_docker".upper()] = True
-
-    _docker_env_fields_keys = env_vars.keys()
-    _docker_env_fields_keys.append("AWS_ACCESS_KEY_ID")
-    _docker_env_fields_keys.append("AWS_SECRET_ACCESS_KEY")
-    _docker_env_fields_keys.append("AWS_DEFAULT_REGION")
-    _docker_env_fields_keys.remove("METHOD")
-    env_vars["DOCKER_ENV_FIELDS"] = ",".join(_docker_env_fields_keys)
+    env_vars["ed_resource_settings_hash".upper()] = _ed_resource_settings.get()
+    env_vars["aws_default_region".upper()] = stack.aws_default_region
+    env_vars["docker_exec_env".upper()] = stack.docker_exec_env
+    env_vars["use_docker".upper()] = True
+    env_vars["CLOBBER"] = True
 
     inputargs = {"display":True}
-    inputargs["human_description"] = 'Attaches ebs volume to instance_id "{}"'.format(stack.instance_id)
     inputargs["env_vars"] = json.dumps(env_vars)
-    inputargs["stateful_id"] = env_vars["STATEFUL_ID"]
-    inputargs["automation_phase"] = "infrastructure"
-    if stack.tags: inputargs["tags"] = stack.tags
-    if stack.labels: inputargs["labels"] = stack.labels
-    stack.attach_volume_to_ec2.insert(**inputargs)
+    inputargs["name"] = stack.resource_name
+    inputargs["stateful_id"] = stack.stateful_id
+    inputargs["human_description"] = "Creating name {} type {}".format(stack.resource_name,stack.resource_type)
+    inputargs["display_hash"] = stack.get_hash_object(inputargs)
 
-    # minimal to optionally format and mount volume
-    # format and attach with ansible via fstab
+    if stack.tags: 
+        inputargs["tags"] = stack.tags
 
-    # Testingyoyo
+    if stack.labels: 
+        inputargs["labels"] = stack.labels
+
+    stack.cloud_resource.insert(**inputargs)
+
     # ansible will require python installed
-
     if stack.volume_fstype and stack.volume_mountpoint:
 
         # get ssh_key

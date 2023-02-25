@@ -135,7 +135,7 @@ def run(stackargs):
     stack.set_variable("stateful_id",stack.random_id())
 
     stack.set_variable("resource_name",stack.volume_name)
-    set_variable("terraform_type","aws_s3_bucket")
+    stack.set_variable("terraform_type","aws_ebs_volume")
 
     _ed_resource_settings = EdResourceSettings(stack=stack)
 
@@ -154,6 +154,12 @@ def run(stackargs):
     inputargs["stateful_id"] = stack.stateful_id
     inputargs["human_description"] = "Creating name {} type {}".format(stack.resource_name,stack.resource_type)
     inputargs["display_hash"] = stack.get_hash_object(inputargs)
+
+    if stack.tags: 
+        inputargs["tags"] = stack.tags
+
+    if stack.labels: 
+        inputargs["labels"] = stack.labels
 
     stack.cloud_resource.insert(**inputargs)
 
