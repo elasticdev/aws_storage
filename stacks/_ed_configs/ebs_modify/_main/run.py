@@ -49,17 +49,34 @@ class EdResourceSettings(object):
         
         resource_keys_maps = { "ec2_instance_id":"instance_id" }
 
+        self.tf_settings = { "tf_vars":tf_vars,
+                             "terraform_type":self.stack.terraform_type,
+                             "tfstate_raw": "True",
+                             "resource_keys_maps": resource_keys_maps,
+                             "resource_keys": resource_keys }
+
+        return self.tf_settings
+
 def _determine_instance_id(stack):
 
-    if stack.instance_id and stack.aws_default_region: return
+    if stack.instance_id and stack.aws_default_region: 
+        return
     
     _lookup = {"must_exists":True}
     _lookup["must_be_one"] = True
     _lookup["resource_type"] = "server"
-    if stack.aws_default_region: _lookup["region"] = stack.aws_default_region
-    if stack.hostname: _lookup["hostname"] = stack.hostname
-    if stack.instance_id: _lookup["instance_id"] = stack.instance_id
+
+    if stack.aws_default_region: 
+        _lookup["region"] = stack.aws_default_region
+
+    if stack.hostname: 
+        _lookup["hostname"] = stack.hostname
+
+    if stack.instance_id: 
+        _lookup["instance_id"] = stack.instance_id
+
     _lookup["search_keys"] = "instance_id"
+
     server_info = list(stack.get_resource(**_lookup))[0]
 
     if not stack.instance_id:
@@ -74,8 +91,11 @@ def _determine_instance_id(stack):
 
 def _determine_volume_id(stack):
 
-    if stack.volume_id: return
-    if not stack.volume_name: return 
+    if stack.volume_id: 
+        return
+
+    if not stack.volume_name: 
+        return 
     
     _lookup = {"must_exists":True}
     _lookup["must_be_one"] = True
@@ -180,43 +200,52 @@ def run(stackargs):
     stack.cloud_resource.insert(**inputargs)
 
     # ansible will require python installed
-    if stack.volume_fstype and stack.volume_mountpoint:
+    if not stack.volume_fstype:
+        return stack.get_results()
 
-        # get ssh_key
-        _lookup = {"must_be_one":True}
-        _lookup["resource_type"] = "ssh_key_pair"
-        _lookup["name"] = stack.ssh_key_name
-        _lookup["serialize"] = True
-        _lookup["serialize_keys"] = [ "private_key" ]
-        private_key = stack.get_resource(decrypt=True,**_lookup)["private_key"]
+    if not stack.volume_mountpoint:
+        return stack.get_results()
 
-        # get server info
-        _lookup = {"must_be_one":True}
-        _lookup["resource_type"] = "server"
-        _lookup["hostname"] = stack.hostname
-        _host_info = list(stack.get_resource(**_lookup))[0]
+    # get ssh_key
+    _lookup = {"must_be_one":True}
+    _lookup["resource_type"] = "ssh_key_pair"
+    _lookup["name"] = stack.ssh_key_name
+    _lookup["serialize"] = True
+    _lookup["serialize_keys"] = [ "private_key" ]
+    private_key = stack.get_resource(decrypt=True,**_lookup)["private_key"]
 
-        env_vars = {"STATEFUL_ID":stack.random_id(size=10)}
-        env_vars["ANS_VAR_volume_fstype"] = stack.volume_fstype
-        env_vars["ANS_VAR_volume_mountpoint"] = stack.volume_mountpoint
-        env_vars["ANS_VAR_private_key"] = private_key
-        env_vars["METHOD"] = "create"
-        env_vars["ANS_VAR_exec_ymls"] = "entry_point/20-format.yml,entry_point/30-mount.yml"
+    # get server info
+    _lookup = {"must_be_one":True}
+    _lookup["resource_type"] = "server"
+    _lookup["hostname"] = stack.hostname
+    _host_info = list(stack.get_resource(**_lookup))[0]
 
-        if stack.config_network == "private":
-            env_vars["ANS_VAR_host_ips"] = _host_info["private_ip"]
-        else:
-            env_vars["ANS_VAR_host_ips"] = _host_info["public_ip"]
+    env_vars = {"STATEFUL_ID":stack.random_id(size=10)}
+    env_vars["ANS_VAR_volume_fstype"] = stack.volume_fstype
+    env_vars["ANS_VAR_volume_mountpoint"] = stack.volume_mountpoint
+    env_vars["ANS_VAR_private_key"] = private_key
+    env_vars["METHOD"] = "create"
+    env_vars["ANS_VAR_exec_ymls"] = "entry_point/20-format.yml,entry_point/30-mount.yml"
 
-        inputargs = {"display":True}
-        inputargs["human_description"] = 'Format and mount volume on instance_id "{}" fstype {} mountpoint {}'.format(stack.instance_id,
-                                                                                                                      stack.volume_fstype,
-                                                                                                                      stack.volume_mountpoint)
-        inputargs["env_vars"] = json.dumps(env_vars)
-        inputargs["stateful_id"] = env_vars["STATEFUL_ID"]
-        inputargs["automation_phase"] = "infrastructure"
-        if stack.tags: inputargs["tags"] = stack.tags
-        if stack.labels: inputargs["labels"] = stack.labels
-        stack.config_vol.insert(**inputargs)
+    if stack.config_network == "private":
+        env_vars["ANS_VAR_host_ips"] = _host_info["private_ip"]
+    else:
+        env_vars["ANS_VAR_host_ips"] = _host_info["public_ip"]
+
+    inputargs = {"display":True}
+    inputargs["human_description"] = 'format/mount vol on instance_id "{}" fstype {} mountpoint {}'.format(stack.instance_id,
+                                                                                                           stack.volume_fstype,
+                                                                                                           stack.volume_mountpoint)
+    inputargs["env_vars"] = json.dumps(env_vars)
+    inputargs["stateful_id"] = env_vars["STATEFUL_ID"]
+    inputargs["automation_phase"] = "infrastructure"
+
+    if stack.tags: 
+        inputargs["tags"] = stack.tags
+
+    if stack.labels: 
+        inputargs["labels"] = stack.labels
+
+    stack.config_vol.insert(**inputargs)
 
     return stack.get_results()
