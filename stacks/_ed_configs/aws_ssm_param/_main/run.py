@@ -1,6 +1,61 @@
-def run(stackargs):
+import json
 
-    import json
+class EdResourceSettings(object):
+
+    def __init__(self,**kwargs):
+
+        self.stack = kwargs["stack"]
+
+    def _get_resource_values_to_add(self):
+    
+        self.resource_values = { "aws_default_region":self.stack.aws_default_region,
+                                 "region":self.stack.aws_default_region }
+
+        return self.resource_values
+
+    def _get_docker_settings(self):
+    
+        env_vars = { "method": "create",
+                     "aws_default_region": self.stack.aws_default_region,
+                     "stateful_id":self.stack.stateful_id,
+                     "resource_tags": "{},{},{}".format(self.stack.resource_type, 
+                                                        self.stack.resource_name,
+                                                        self.stack.aws_default_region),
+                     "name": self.stack.resource_name }
+    
+        include_env_vars_keys = [ "aws_access_key_id",
+                                  "aws_secret_access_key" ]
+    
+        self.docker_settings = { "env_vars":env_vars,
+                                 "include_env_vars_keys":include_env_vars_keys }
+
+        return self.docker_settings
+    
+    def _get_tf_settings(self):
+
+        tf_vars = { "aws_default_region": self.stack.aws_default_region }
+        tf_vars["ssm_key"] = self.stack.ssm_key
+        tf_vars["ssm_value"] = self.stack.ssm_value
+        tf_vars["ssm_type"] = self.stack.ssm_type
+        tf_vars["ssm_description"] = self.stack.ssm_description
+
+        resource_keys = [ "key_id",
+                          "name",
+                          "tier",
+                          "type",
+                          "id" ]
+        
+        resource_keys_maps = { "ssm_ref":"name" }
+
+        self.tf_settings = { "tf_vars":tf_vars,
+                             "terraform_type":self.stack.terraform_type,
+                             "tfstate_raw": "True",
+                             "resource_keys_maps": resource_keys_maps,
+                             "resource_keys": resource_keys }
+
+        return self.tf_settings
+
+def run(stackargs):
 
     # instantiate authoring stack
     stack = newStack(stackargs)
@@ -17,7 +72,7 @@ def run(stackargs):
     stack.parse.add_optional(key="publish_to_saas",default="null")
 
     # Add execgroup
-    stack.add_execgroup("elasticdev:::aws_storage::ssm_parameter_store")
+    stack.add_execgroup("elasticdev:::aws_storage::ssm_parameter_store","cloud_resource")
     stack.add_substack('elasticdev:::ed_core::publish_resource')
 
     # Initialize Variables in stack
@@ -25,40 +80,35 @@ def run(stackargs):
     stack.init_execgroups()
     stack.init_substacks()
 
+    stack.set_variable("provider","aws")
+    stack.set_variable("stateful_id",stack.random_id())
+
+    stack.set_variable("terraform_type","aws_ssm_parameter")
     stack.set_variable("resource_type","cloud_parameters")
+    stack.set_variable("resource_name",stack.ssh_key)
 
     if not stack.ssm_description:
         stack.set_variable("ssm_description","The ssm parameter for key = {}".format(stack.ssm_key))
 
-    env_vars = {"aws_default_region".upper(): stack.aws_default_region }
-    env_vars["stateful_id".upper()] = stack.stateful_id
-    env_vars["resource_type".upper()] = stack.resource_type
+    _ed_resource_settings = EdResourceSettings(stack=stack)
+
+    env_vars = { "STATEFUL_ID":stack.stateful_id,
+                 "METHOD":"create" }
+
+    env_vars["ed_resource_settings_hash".upper()] = _ed_resource_settings.get()
+    env_vars["aws_default_region".upper()] = stack.aws_default_region
     env_vars["docker_exec_env".upper()] = stack.docker_exec_env
-
-    env_vars["TF_VAR_ssm_key"] = stack.ssm_key
-    env_vars["TF_VAR_ssm_value"] = stack.ssm_value
-    env_vars["TF_VAR_ssm_type"] = stack.ssm_type
-    env_vars["TF_VAR_ssm_description"] = stack.ssm_description
-    env_vars["TF_VAR_aws_default_region"] = stack.aws_default_region
-
-    env_vars["METHOD"] = "create"
-    env_vars["CLOBBER"] = True
-    env_vars["RESOURCE_TAGS"] = "{},{}".format(stack.resource_type,stack.aws_default_region)
     env_vars["use_docker".upper()] = True
-
-    docker_env_fields_keys = env_vars.keys()
-    docker_env_fields_keys.append("AWS_ACCESS_KEY_ID")
-    docker_env_fields_keys.append("AWS_SECRET_ACCESS_KEY")
-    docker_env_fields_keys.remove("METHOD")
-
-    env_vars["DOCKER_ENV_FIELDS"] = ",".join(docker_env_fields_keys)
+    env_vars["CLOBBER"] = True
 
     inputargs = {"display":True}
     inputargs["env_vars"] = json.dumps(env_vars)
-    inputargs["display"] = True
+    inputargs["name"] = stack.resource_name
     inputargs["stateful_id"] = stack.stateful_id
-    inputargs["human_description"] = "Create {} key {}".format(stack.resource_type,stack.ssm_key)
-    stack.ssm_parameter_store.insert(**inputargs)
+    inputargs["human_description"] = "Creating name {} type {}".format(stack.resource_name,stack.resource_type)
+    inputargs["display_hash"] = stack.get_hash_object(inputargs)
+
+    stack.cloud_resource.insert(**inputargs)
 
     if not stack.publish_to_saas: return stack.get_results()
 

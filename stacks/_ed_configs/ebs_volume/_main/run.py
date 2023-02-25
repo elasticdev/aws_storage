@@ -1,3 +1,63 @@
+import json
+
+class EdResourceSettings(object):
+
+    def __init__(self,**kwargs):
+
+        self.stack = kwargs["stack"]
+
+    def _get_resource_values_to_add(self):
+    
+        self.resource_values = { "aws_default_region":self.stack.aws_default_region,
+                                 "region":self.stack.aws_default_region }
+
+        self.resource_values["name"] = self.stack.resource_name
+
+        return self.resource_values
+
+    def _get_docker_settings(self):
+    
+        env_vars = { "method": "create",
+                     "aws_default_region": self.stack.aws_default_region,
+                     "stateful_id":self.stack.stateful_id,
+                     "resource_tags": "{},{},{}".format(self.stack.resource_type, 
+                                                        self.stack.resource_name,
+                                                        self.stack.aws_default_region),
+                     "name": self.stack.resource_name }
+    
+        include_env_vars_keys = [ "aws_access_key_id",
+                                  "aws_secret_access_key" ]
+    
+        self.docker_settings = { "env_vars":env_vars,
+                                 "include_env_vars_keys":include_env_vars_keys }
+
+        return self.docker_settings
+    
+    def _get_tf_settings(self):
+
+        tf_vars = { "aws_default_region": self.stack.aws_default_region }
+        tf_vars["aws_default_region"] = self.stack.aws_default_region
+        tf_vars["availability_zone"] = self.stack.availability_zone
+        tf_vars["volume_size"] = self.stack.volume_size
+        tf_vars["volume_name"] = self.stack.volume_name
+
+        if self.stack.cloud_tags_hash: 
+            tf_vars["cloud_tags"] = json.dumps(self.stack.b64_decode(self.stack.cloud_tags_hash))
+
+        resource_keys = [ "availability_zone",
+                          "arn",
+                          "id" ]
+        
+        resource_keys_maps = { "volume_id":"id" }
+
+        self.tf_settings = { "tf_vars":tf_vars,
+                             "terraform_type":self.stack.terraform_type,
+                             "tfstate_raw": "True",
+                             "resource_keys_maps": resource_keys_maps,
+                             "resource_keys": resource_keys }
+
+        return self.tf_settings
+
 def _determine_instance_id(stack):
 
     if stack.instance_id and stack.availability_zone: return
@@ -62,7 +122,7 @@ def run(stackargs):
     stack.parse.add_optional(key="cloud_tags_hash",default='null')
 
     # Add execgroup
-    stack.add_execgroup("elasticdev:::aws_storage::ebs_volume")
+    stack.add_execgroup("elasticdev:::aws_storage::ebs_volume","cloud_resource")
 
     # Initialize Variables in stack
     stack.init_variables()
@@ -71,40 +131,30 @@ def run(stackargs):
     _determine_instance_id(stack)
 
     stack.set_variable("resource_type","ebs_volume")
+    stack.set_variable("provider","aws")
+    stack.set_variable("stateful_id",stack.random_id())
 
-    # call to create volume
-    env_vars = {"AWS_DEFAULT_REGION":stack.aws_default_region}
-    env_vars["STATEFUL_ID"] = stack.stateful_id
+    stack.set_variable("resource_name",stack.volume_name)
+    set_variable("terraform_type","aws_s3_bucket")
 
-    env_vars["TF_VAR_aws_default_region"] = stack.aws_default_region
-    env_vars["TF_VAR_availability_zone"] = stack.availability_zone
-    env_vars["TF_VAR_volume_size"] = stack.volume_size
-    env_vars["TF_VAR_volume_name"] = stack.volume_name
-    env_vars["EBS_VOLUME_NAME"] = stack.volume_name
+    _ed_resource_settings = EdResourceSettings(stack=stack)
 
-    if stack.cloud_tags_hash:
-        env_vars["TF_VAR_cloud_tags"] = json.dumps(stack.b64_decode(stack.cloud_tags_hash))
+    env_vars = { "STATEFUL_ID":stack.stateful_id,
+                 "METHOD":"create" }
 
+    env_vars["ed_resource_settings_hash".upper()] = _ed_resource_settings.get()
+    env_vars["aws_default_region".upper()] = stack.aws_default_region
     env_vars["docker_exec_env".upper()] = stack.docker_exec_env
-    env_vars["RESOURCE_TYPE"] = stack.resource_type
-    env_vars["RESOURCE_TAGS"] = "{},{},{},{},{}".format("ebs","ebs_volume", "aws", stack.volume_name, stack.aws_default_region)
-    env_vars["METHOD"] = "create"
-    if stack.use_docker: env_vars["use_docker".upper()] = True
-
-    _docker_env_fields_keys = env_vars.keys()
-    _docker_env_fields_keys.append("AWS_ACCESS_KEY_ID")
-    _docker_env_fields_keys.append("AWS_SECRET_ACCESS_KEY")
-    _docker_env_fields_keys.append("AWS_DEFAULT_REGION")
-    _docker_env_fields_keys.remove("METHOD")
-    env_vars["DOCKER_ENV_FIELDS"] = ",".join(_docker_env_fields_keys)
+    env_vars["use_docker".upper()] = True
+    env_vars["CLOBBER"] = True
 
     inputargs = {"display":True}
-    inputargs["human_description"] = 'Creates ebs volume "{}"'.format(stack.volume_name)
-    inputargs["stateful_id"] = stack.stateful_id
     inputargs["env_vars"] = json.dumps(env_vars)
-    inputargs["automation_phase"] = "infrastructure"
-    if stack.tags: inputargs["tags"] = stack.tags
-    if stack.labels: inputargs["labels"] = stack.labels
-    stack.ebs_volume.insert(**inputargs)
+    inputargs["name"] = stack.resource_name
+    inputargs["stateful_id"] = stack.stateful_id
+    inputargs["human_description"] = "Creating name {} type {}".format(stack.resource_name,stack.resource_type)
+    inputargs["display_hash"] = stack.get_hash_object(inputargs)
+
+    stack.cloud_resource.insert(**inputargs)
 
     return stack.get_results()
