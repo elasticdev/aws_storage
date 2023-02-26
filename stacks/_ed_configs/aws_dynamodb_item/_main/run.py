@@ -40,17 +40,19 @@ class EdResourceSettings(object):
         tf_vars["item_hash"] = self.stack.item_hash
         tf_vars["hash_key"] = self.stack.hash_key
 
-        resource_keys = [ "table_name",
-                          "id",
-                          "timeout" ]
+        add_keys = [ "table_name",
+                     "id",
+                     "timeout" ]
         
-        resource_keys_maps = { "name":"table_name" }
+        maps = { "name":"table_name" }
+
+        resource_params = { "add_keys": add_keys,
+                            "map_keys": maps,
+                            "include_raw": "True" }
 
         self.tf_settings = { "tf_vars":tf_vars,
                              "terraform_type":self.stack.terraform_type,
-                             "tfstate_raw": "True",
-                             "resource_keys_maps": resource_keys_maps,
-                             "resource_keys": resource_keys }
+                             "resource_params": resource_params }
 
         return self.tf_settings
 

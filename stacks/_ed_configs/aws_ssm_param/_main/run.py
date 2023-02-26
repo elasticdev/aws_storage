@@ -39,19 +39,21 @@ class EdResourceSettings(object):
         tf_vars["ssm_type"] = self.stack.ssm_type
         tf_vars["ssm_description"] = self.stack.ssm_description
 
-        resource_keys = [ "key_id",
-                          "name",
-                          "tier",
-                          "type",
-                          "id" ]
+        add_keys = [ "key_id",
+                     "name",
+                     "tier",
+                     "type",
+                     "id" ]
         
-        resource_keys_maps = { "ssm_ref":"name" }
+        maps = { "ssm_ref":"name" }
+
+        resource_params = { "add_keys": add_keys,
+                            "map_keys": maps,
+                            "include_raw": "True" }
 
         self.tf_settings = { "tf_vars":tf_vars,
                              "terraform_type":self.stack.terraform_type,
-                             "tfstate_raw": "True",
-                             "resource_keys_maps": resource_keys_maps,
-                             "resource_keys": resource_keys }
+                             "resource_params": resource_params }
 
         return self.tf_settings
 
