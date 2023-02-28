@@ -1,6 +1,6 @@
 resource "aws_db_subnet_group" "default" {
   name       = "${var.db_subnet_name}"
-  subnet_ids = split(",",var.subnet_ids)
+  subnet_ids = var.subnet_ids
 }
 
 resource "aws_db_instance" "default" {
@@ -8,7 +8,7 @@ resource "aws_db_instance" "default" {
   identifier = "${var.rds_name}"
 
   db_subnet_group_name    = aws_db_subnet_group.default.id
-  vpc_security_group_ids  = split(",",var.security_group_ids)
+  vpc_security_group_ids  = var.security_group_ids
 
   username                = var.master_username
   password                = var.master_password

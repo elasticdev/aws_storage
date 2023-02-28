@@ -42,7 +42,7 @@ class EdResourceSettings(object):
         tf_vars["db_subnet_name"] = self.stack.db_subnet_name
         tf_vars["rds_master_username"] = self.stack.master_username
         tf_vars["rds_master_password"] = self.stack.master_password
-        tf_vars["security_group_ids"] = self.stack.sg_id
+        tf_vars["security_group_ids"] = list(self.stack.sg_id.split(","))
         tf_vars["subnet_ids"] = list(self.stack.subnet_ids.split(","))
         tf_vars["allocated_storage"] = self.stack.allocated_storage
         tf_vars["engine"] = self.stack.engine

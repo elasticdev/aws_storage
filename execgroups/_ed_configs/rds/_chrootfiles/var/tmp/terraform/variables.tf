@@ -28,11 +28,9 @@ variable "master_password" {
 }
 
 variable "security_group_ids" {
-  default    = "sg-09ab91842fce1d581"
 }
 
 variable "subnet_ids" {
-  default    = "subnet-0ce4100dbb916d5c3,subnet-0a9af5afdcf1b350b"
 }
 
 variable "allocated_storage" {
