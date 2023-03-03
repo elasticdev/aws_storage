@@ -1,0 +1,13 @@
+desc: The stack attaches an ebs volume to an ec2 instance.
+release: 0.0.1
+categories: 
+   - ec2
+   - volume
+   - ebs
+tags:
+   - ec2
+   - volume
+   - ebs
+   - aws
+   - cloud
+   - public_cloud

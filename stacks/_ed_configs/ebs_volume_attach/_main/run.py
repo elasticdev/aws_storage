@@ -12,6 +12,9 @@ class EdResourceSettings(object):
                                  "region":self.stack.aws_default_region }
 
         self.resource_values["name"] = self.stack.resource_name
+        self.resource_values["hostname"] = self.stack.hostname
+        self.resource_values["volume_id"] = self.stack.volume_id
+        self.resource_values["volume_name"] = self.stack.volume_name
 
         return self.resource_values
 
@@ -36,18 +39,18 @@ class EdResourceSettings(object):
     def _get_tf_settings(self):
 
         tf_vars = { "aws_default_region": self.stack.aws_default_region }
-        tf_vars["availability_zone"] = self.stack.availability_zone
-        tf_vars["volume_size"] = self.stack.volume_size
-        tf_vars["volume_name"] = self.stack.volume_name
+        tf_vars["device_name"] = self.stack.device_name
+        tf_vars["instance_id"] = self.stack.instance_id
+        tf_vars["volume_id"] = self.stack.volume_id
 
         if self.stack.cloud_tags_hash: 
             tf_vars["cloud_tags"] = json.dumps(self.stack.b64_decode(self.stack.cloud_tags_hash))
 
-        add_keys = [ "availability_zone",
-                     "arn",
+        add_keys = [ "arn",
                      "id" ]
         
-        maps = { "volume_id":"id" }
+        maps = { "instance_id":"id",
+                 "ec2_instance_id":"id" }
 
         resource_params = { "add_keys": add_keys,
                             "map_keys": maps,
@@ -59,49 +62,60 @@ class EdResourceSettings(object):
 
         return self.tf_settings
 
+def _get_instance_id(stack):
+
+    _lookup = {"must_exists":True}
+    _lookup["must_be_one"] = True
+    _lookup["resource_type"] = "server"
+    _lookup["hostname"] = stack.hostname
+    _lookup["region"] = stack.aws_default_region
+    _info = list(stack.get_resource(**_lookup))[0]
+
+    return _info["instance_id"]
+
+def _get_volume_id(stack):
+
+    _lookup = {"must_exists":True}
+    _lookup["must_be_one"] = True
+    _lookup["name"] = stack.volume_name
+    _lookup["resource_type"] = "ebs_volume"
+    _lookup["region"] = stack.aws_default_region
+    _info = list(stack.get_resource(**_lookup))[0]
+
+    return _info["volume_id"]
+
 def run(stackargs):
 
     import json
-
-    stackargs["add_cluster"] = False
-    stackargs["add_instance"] = False
 
     # instantiate authoring stack
     stack = newStack(stackargs)
 
     # Add default variables
+    stack.parse.add_required(key="hostname")
     stack.parse.add_required(key="volume_name")
-    stack.parse.add_required(key="volume_size",default=10)
+    stack.parse.add_required(key="aws_default_region")
 
+    stack.parse.add_optional(key="device_name",default="/dev/xvdc")
     stack.parse.add_optional(key="docker_exec_env",default="elasticdev/terraform-run-env")
-    stack.parse.add_optional(key="stateful_id",default="_random")
-
-    stack.parse.add_optional(key="hostname",default="null")
-    stack.parse.add_optional(key="aws_default_region",default="null")
-
-    stack.parse.add_optional(key="availability_zone",default="null")
-    stack.parse.add_optional(key="instance_id",default="null")
-    stack.parse.add_optional(key="use_docker",default=True,null_allowed=True)
-
-    # labels and tags
-    stack.parse.add_optional(key="labels",default="null")
-    stack.parse.add_optional(key="tags",default="null")
-
     stack.parse.add_optional(key="cloud_tags_hash",default='null')
 
     # Add execgroup
-    stack.add_execgroup("elasticdev:::aws_storage::ebs_volume","cloud_resource")
+    stack.add_execgroup("elasticdev:::aws_storage::attach_volume_to_ec2","cloud_resource")
 
-    # Initialize Variables in stack
+    # Initialize 
     stack.init_variables()
     stack.init_execgroups()
 
-    stack.set_variable("resource_type","ebs_volume")
     stack.set_variable("provider","aws")
     stack.set_variable("stateful_id",stack.random_id())
 
-    stack.set_variable("resource_name",stack.volume_name)
-    stack.set_variable("terraform_type","aws_ebs_volume")
+    stack.set_variable("instance_id",_get_instance_id(stack))
+    stack.set_variable("volume_id",_get_volume_id(stack))
+
+    stack.set_variable("resource_name","attachment_{}".format(stack.volume_name))
+    stack.set_variable("resource_type","volume_attachment")
+    stack.set_variable("terraform_type","aws_volume_attachment")
 
     _ed_resource_settings = EdResourceSettings(stack=stack)
 
@@ -118,14 +132,8 @@ def run(stackargs):
     inputargs["env_vars"] = json.dumps(env_vars)
     inputargs["name"] = stack.resource_name
     inputargs["stateful_id"] = stack.stateful_id
-    inputargs["human_description"] = "Creating name {} type {}".format(stack.resource_name,stack.resource_type)
+    inputargs["human_description"] = 'Attaches ebs volume to instance_id "{}"'.format(stack.instance_id)
     inputargs["display_hash"] = stack.get_hash_object(inputargs)
-
-    if stack.tags: 
-        inputargs["tags"] = stack.tags
-
-    if stack.labels: 
-        inputargs["labels"] = stack.labels
 
     stack.cloud_resource.insert(**inputargs)
 
