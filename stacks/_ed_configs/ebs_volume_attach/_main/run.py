@@ -93,7 +93,7 @@ def run(stackargs):
 
     # Add default variables
     stack.parse.add_required(key="hostname")
-    stack.parse.add_required(key="aws_default_region")
+    stack.parse.add_required(key="aws_default_region",default="us-east-1")
 
     stack.parse.add_optional(key="volume_name",default='null')
     stack.parse.add_optional(key="device_name",default="/dev/xvdc")
