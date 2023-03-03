@@ -93,9 +93,9 @@ def run(stackargs):
 
     # Add default variables
     stack.parse.add_required(key="hostname")
-    stack.parse.add_required(key="volume_name")
     stack.parse.add_required(key="aws_default_region")
 
+    stack.parse.add_optional(key="volume_name",default='null')
     stack.parse.add_optional(key="device_name",default="/dev/xvdc")
     stack.parse.add_optional(key="docker_exec_env",default="elasticdev/terraform-run-env")
     stack.parse.add_optional(key="cloud_tags_hash",default='null')
@@ -104,8 +104,11 @@ def run(stackargs):
     stack.add_execgroup("elasticdev:::aws_storage::attach_volume_to_ec2","cloud_resource")
 
     # Initialize 
-    stack.init_variables()
     stack.init_execgroups()
+    stack.init_variables()
+
+    if not stack.volume_name:
+        stack.set_variable("volume_name","{}-data".format(stack.hostname))
 
     stack.set_variable("provider","aws")
     stack.set_variable("stateful_id",stack.random_id())

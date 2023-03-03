@@ -11,7 +11,6 @@
 | argument      | description                            | var type | default      |
 | ------------- | -------------------------------------- | -------- | ------------ |
 | hostname   | the hostname to mount the volume       | string   | None         |
-| volume_name   | the volume_name to mount on the hostname       | string   | None         |
 | aws_default_region   | aws region to create the ecr repo                | string   | us-east-1         |
 
 **Optional**
@@ -20,3 +19,4 @@
 | ------------- | -------------------------------------- | -------- | ------------ |
 | device_name | the device name for the volume | string   | /dev/xvdc       |
 | docker_exec_env | the docker container for terraform execution | string   | elasticdev/terraform-run-env       |
+| volume_name   | the volume_name to mount on the hostname       | string   | <hostname>-name         |
