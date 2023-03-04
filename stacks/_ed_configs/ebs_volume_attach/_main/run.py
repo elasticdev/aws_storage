@@ -62,6 +62,17 @@ class EdResourceSettings(object):
 
         return self.tf_settings
 
+    def get(self):
+
+        ed_resource_settings = { "tf_settings":self._get_tf_settings(),
+                                 "docker_settings":self._get_docker_settings(),
+                                 "resource_values":self._get_resource_values_to_add(),
+                                 "resource_type":self.stack.resource_type,
+                                 "provider":self.stack.provider
+                                 }
+
+        return self.stack.b64_encode(ed_resource_settings)
+
 def _get_instance_id(stack):
 
     _lookup = {"must_exists":True}
@@ -117,7 +128,7 @@ def run(stackargs):
     stack.set_variable("volume_id",_get_volume_id(stack))
 
     stack.set_variable("resource_name","attachment_{}".format(stack.volume_name))
-    stack.set_variable("resource_type","volume_attachment")
+    stack.set_variable("resource_type","ebs_volume_attach")
     stack.set_variable("terraform_type","aws_volume_attachment")
 
     _ed_resource_settings = EdResourceSettings(stack=stack)
