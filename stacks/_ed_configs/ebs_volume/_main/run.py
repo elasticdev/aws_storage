@@ -59,6 +59,17 @@ class EdResourceSettings(object):
 
         return self.tf_settings
 
+    def get(self):
+
+        ed_resource_settings = { "tf_settings":self._get_tf_settings(),
+                                 "docker_settings":self._get_docker_settings(),
+                                 "resource_values":self._get_resource_values_to_add(),
+                                 "resource_type":self.stack.resource_type,
+                                 "provider":self.stack.provider
+                                 }
+
+        return self.stack.b64_encode(ed_resource_settings)
+
 def run(stackargs):
 
     import json
