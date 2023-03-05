@@ -21,8 +21,8 @@ class EdResourceSettings(object):
     def _get_docker_settings(self):
     
         env_vars = { "method": "create",
-                     "aws_default_region": self.stack.aws_default_region,
                      "stateful_id":self.stack.stateful_id,
+                     "aws_default_region": self.stack.aws_default_region,
                      "resource_tags": "{},{},{}".format(self.stack.resource_type, 
                                                         self.stack.resource_name,
                                                         self.stack.aws_default_region),

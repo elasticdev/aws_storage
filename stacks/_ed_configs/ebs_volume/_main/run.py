@@ -63,8 +63,8 @@ class EdResourceSettings(object):
 
         ed_resource_settings = { "tf_settings":self._get_tf_settings(),
                                  "docker_settings":self._get_docker_settings(),
-                                 "resource_values":self._get_resource_values_to_add(),
                                  "resource_type":self.stack.resource_type,
+                                 "resource_values":self._get_resource_values_to_add(),
                                  "provider":self.stack.provider
                                  }
 
