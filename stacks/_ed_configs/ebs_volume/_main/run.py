@@ -18,11 +18,11 @@ class EdResourceSettings(object):
     def _get_docker_settings(self):
     
         env_vars = { "method": "create",
-                     "aws_default_region": self.stack.aws_default_region,
                      "stateful_id":self.stack.stateful_id,
                      "resource_tags": "{},{},{}".format(self.stack.resource_type, 
                                                         self.stack.resource_name,
                                                         self.stack.aws_default_region),
+                     "aws_default_region": self.stack.aws_default_region,
                      "name": self.stack.resource_name }
     
         include_env_vars_keys = [ "aws_access_key_id",
