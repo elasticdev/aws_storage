@@ -81,7 +81,7 @@ def run(stackargs):
 
     stack.parse.add_optional(key="aws_default_region",default="us-east-1")
     stack.parse.add_optional(key="stateful_id",default="_random")
-    stack.parse.add_optional(key="docker_exec_env",default="elasticdev/terraform-run-env:14")
+    stack.parse.add_optional(key="docker_exec_env",default="elasticdev/terraform-run-env:1.3.7")
 
     # Add execgroup
     stack.add_execgroup("elasticdev:::aws_storage::dynamodb_item","cloud_resource")

@@ -136,7 +136,7 @@ def run(stackargs):
     stack.parse.add_optional(key="volume_name",default='null')
     stack.parse.add_optional(key="volume_id",default='null')
 
-    stack.parse.add_optional(key="terraform_docker_exec_env",default="elasticdev/terraform-run-env")
+    stack.parse.add_optional(key="terraform_docker_exec_env",default="elasticdev/terraform-run-env:1.3.7")
     stack.parse.add_optional(key="ansible_docker_exec_env",default="elasticdev/ansible-run-env")
 
     stack.parse.add_optional(key="hostname",default="null")

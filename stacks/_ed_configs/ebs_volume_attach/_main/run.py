@@ -108,7 +108,7 @@ def run(stackargs):
 
     stack.parse.add_optional(key="volume_name",default='null')
     stack.parse.add_optional(key="device_name",default="/dev/xvdc")
-    stack.parse.add_optional(key="docker_exec_env",default="elasticdev/terraform-run-env")
+    stack.parse.add_optional(key="docker_exec_env",default="elasticdev/terraform-run-env:1.3.7")
     stack.parse.add_optional(key="cloud_tags_hash",default='null')
 
     # Add execgroup

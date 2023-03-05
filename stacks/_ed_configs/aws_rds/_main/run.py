@@ -127,7 +127,7 @@ def run(stackargs):
 
     # docker image to execute terraform with
     stack.parse.add_optional(key="aws_default_region",default="us-east-1")
-    stack.parse.add_optional(key="docker_exec_env",default="elasticdev/terraform-run-env")
+    stack.parse.add_optional(key="docker_exec_env",default="elasticdev/terraform-run-env:1.3.7")
     stack.parse.add_optional(key="publish_creds",default="null")
     stack.parse.add_optional(key="publish_to_saas",default="null")  # this is true, this will overide publish_creds
 

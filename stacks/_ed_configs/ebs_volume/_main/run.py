@@ -84,7 +84,7 @@ def run(stackargs):
     stack.parse.add_required(key="volume_name")
     stack.parse.add_required(key="volume_size",default=10)
 
-    stack.parse.add_optional(key="docker_exec_env",default="elasticdev/terraform-run-env")
+    stack.parse.add_optional(key="docker_exec_env",default="elasticdev/terraform-run-env:1.3.7")
     stack.parse.add_optional(key="stateful_id",default="_random")
 
     stack.parse.add_optional(key="hostname",default="null")
