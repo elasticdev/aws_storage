@@ -12,7 +12,7 @@ resource "aws_db_instance" "default" {
 
   username                = var.master_username
   password                = var.master_password
-  name                    = var.db_name
+  db_name                 = var.db_name
 
   instance_class          = var.instance_class
   allocated_storage       = var.allocated_storage
