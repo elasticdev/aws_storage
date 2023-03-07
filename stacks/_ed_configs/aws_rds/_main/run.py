@@ -36,8 +36,9 @@ class EdResourceSettings(object):
     
     def _get_tf_settings(self):
 
-        tf_vars = { "aws_default_region": self.stack.aws_default_region }
-        tf_vars = {"rds_name":self.stack.rds_name}
+        tf_vars = { "aws_default_region": self.stack.aws_default_region,
+                    "rds_name":self.stack.rds_name}
+
         tf_vars["db_name"] = self.stack.db_name
         tf_vars["db_subnet_name"] = self.stack.db_subnet_name
         tf_vars["rds_master_username"] = self.stack.master_username
