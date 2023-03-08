@@ -65,10 +65,35 @@ class EdResourceSettings(object):
             tf_vars["cloud_tags"] = json.dumps(self.stack.b64_decode(self.stack.cloud_tags_hash))
 
         add_keys = [ "arn",
-                     "id"
-                     ]
+                     "address",
+                     "allocated_storage",
+                     "allow_major_version_upgrade",
+                     "auto_minor_version_upgrade",
+                     "availability_zone",
+                     "ca_cert_identifier",
+                     "db_name",
+                     "db_subnet_group_name",
+                     "delete_automated_backups",
+                     "endpoint",
+                     "engine",
+                     "engine_version",
+                     "engine_version_actual",
+                     "hosted_zone_id",
+                     "identifier",
+                     "instance_class",
+                     "multi_az",
+                     "network_type",
+                     "performance_insights_enabled",
+                     "port",
+                     "publicly_accessible",
+                     "resource_id",
+                     "security_group_names",
+                     "skip_final_snapshot",
+                     "storage_encrypted",
+                     "storage_type" ]
         
-        maps = { "db_id":"arn" }
+        maps = { "db_id":"arn",
+                 "id": "arn" }
 
         resource_params = { "add_keys": add_keys,
                             "map_keys": maps,
