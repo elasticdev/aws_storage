@@ -88,7 +88,7 @@ def run(stackargs):
     stack.parse.add_optional(key="stateful_id",default="_random")
 
     stack.parse.add_optional(key="hostname",default="null")
-    stack.parse.add_optional(key="aws_default_region",default="null")
+    stack.parse.add_optional(key="aws_default_region",default="us-east-1")
 
     stack.parse.add_optional(key="availability_zone",default="null")
     stack.parse.add_optional(key="instance_id",default="null")
@@ -106,6 +106,9 @@ def run(stackargs):
     # Initialize Variables in stack
     stack.init_variables()
     stack.init_execgroups()
+
+    if not stack.availability_zone:
+        stack.set_variable("availability_zone","{}a".format(stack.aws_default_region))
 
     stack.set_variable("resource_type","ebs_volume")
     stack.set_variable("provider","aws")
