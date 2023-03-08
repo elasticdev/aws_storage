@@ -1,5 +1,40 @@
 import json
 
+def _determine_avail_zone(stack):
+
+    if stack.availability_zone: 
+        return
+
+    # we lookup instance_id or hostname
+    # and use the available zone from the instance
+    
+    _lookup = {"must_exists":True}
+    _lookup["must_be_one"] = True
+    _lookup["resource_type"] = "server"
+
+    if stack.aws_default_region: 
+        _lookup["region"] = stack.aws_default_region
+
+    if stack.instance_id: 
+        _lookup["instance_id"] = stack.instance_id
+    elif stack.hostname: 
+        _lookup["hostname"] = stack.hostname
+    else:
+        return
+
+    _lookup["search_keys"] = "instance_id"
+    server_info = list(stack.get_resource(**_lookup))[0]
+
+    if not stack.instance_id:
+        stack.set_variable("instance_id",
+                           server_info["instance_id"])
+
+    if not stack.availability_zone:
+        stack.set_variable("availability_zone",
+                           server_info["availability_zone"])
+
+    return 
+
 class EdResourceSettings(object):
 
     def __init__(self,**kwargs):
@@ -106,9 +141,7 @@ def run(stackargs):
     # Initialize Variables in stack
     stack.init_variables()
     stack.init_execgroups()
-
-    if not stack.availability_zone:
-        stack.set_variable("availability_zone","{}a".format(stack.aws_default_region))
+    _determine_avail_zone()
 
     stack.set_variable("resource_type","ebs_volume")
     stack.set_variable("provider","aws")
