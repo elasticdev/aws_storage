@@ -5,6 +5,12 @@ variable "item_hash" { default = "eyJidWlsZF9pbWFnZSI6IHsiUyI6ICJhd3MvY29kZWJ1aW
 variable "table_name" { default = "codebuild-shared-ed-eval-settings" }
 variable "hash_key" { default = "_id" }
 
+variable "cloud_tags" {
+  description = "additional tags as a map"
+  type        = map(string)
+  default     = {}
+}
+
 resource "aws_dynamodb_table_item" "example" {
   table_name = var.table_name
   hash_key = var.hash_key

@@ -30,6 +30,12 @@ variable "scan_on_push" {
   default     = "true"
 }
 
+variable "cloud_tags" {
+  description = "additional tags as a map"
+  type        = map(string)
+  default     = {}
+}
+
 variable "lifecycle_policy" {
   default = <<EOF
 {
@@ -51,7 +57,6 @@ variable "lifecycle_policy" {
 }
 EOF
 }
-
 
 ################################################
 # Below doesn't work
@@ -75,12 +80,3 @@ EOF
 #  default     = ""
 #}
 #
-
-
-
-
-
-
-
-
-

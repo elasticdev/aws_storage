@@ -15,3 +15,10 @@ variable "device_name" {
 variable "instance_id" {
   type        = string
 }
+
+variable "cloud_tags" {
+  description = "additional tags as a map"
+  type        = map(string)
+  default     = {}
+}
+

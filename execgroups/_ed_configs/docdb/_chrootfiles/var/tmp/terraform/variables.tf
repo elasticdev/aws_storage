@@ -78,3 +78,8 @@ variable "engine_version" {
 
 variable "security_group_ids" {}
 
+variable "cloud_tags" {
+  description = "additional tags as a map"
+  type        = map(string)
+  default     = {}
+}
