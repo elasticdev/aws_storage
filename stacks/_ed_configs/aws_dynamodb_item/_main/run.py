@@ -11,7 +11,7 @@ class EdResourceSettings(object):
         self.resource_values = { "aws_default_region":self.stack.aws_default_region,
                                  "region":self.stack.aws_default_region }
 
-        self.resource_values["dynamodb_name"] = self.stack.dynamodb_name
+        self.resource_values["table_name"] = self.stack.table_name
 
         return self.resource_values
 

@@ -82,7 +82,6 @@ def run(stackargs):
 
     # Add default variables
     stack.parse.add_required(key="dynamodb_name")
-
     stack.parse.add_optional(key="hash_key",default='_id')
     stack.parse.add_optional(key="billing_mode",default='PAY_PER_REQUEST')
     stack.parse.add_optional(key="cloud_tags_hash",default='null')
