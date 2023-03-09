@@ -98,7 +98,7 @@ def run(stackargs):
 
     stack.set_variable("terraform_type","aws_ssm_parameter")
     stack.set_variable("resource_type","cloud_parameters")
-    stack.set_variable("resource_name",stack.ssh_key)
+    stack.set_variable("resource_name",stack.ssm_key)
 
     if not stack.ssm_description:
         stack.set_variable("ssm_description","The ssm parameter for key = {}".format(stack.ssm_key))
