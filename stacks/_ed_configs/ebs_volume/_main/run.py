@@ -134,7 +134,7 @@ def run(stackargs):
     # Initialize Variables in stack
     stack.init_variables()
     stack.init_execgroups()
-    _determine_avail_zone()
+    _determine_avail_zone(stack)
 
     if not stack.availability_zone: 
         raise Exception("cannot determine availability zone")
