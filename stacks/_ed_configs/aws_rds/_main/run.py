@@ -144,7 +144,6 @@ def run(stackargs):
     stack.parse.add_optional(key="allow_major_version_upgrade",default="true")
     stack.parse.add_optional(key="auto_minor_version_upgrade",default="true")
     stack.parse.add_optional(key="skip_final_snapshot",default="true")
-    stack.parse.add_optional(key="use_docker",default=True,null_allowed=True)
     stack.parse.add_optional(key="cloud_tags_hash",default='null')
 
     stack.parse.add_optional(key="backup_retention_period",default="1") 
@@ -198,8 +197,6 @@ def run(stackargs):
     env_vars["ed_resource_settings_hash".upper()] = _ed_resource_settings.get()
     env_vars["aws_default_region".upper()] = stack.aws_default_region
     env_vars["docker_exec_env".upper()] = stack.docker_exec_env
-    env_vars["use_docker".upper()] = True
-    env_vars["CLOBBER"] = True
 
     inputargs = {"display":True}
     inputargs["env_vars"] = json.dumps(env_vars)

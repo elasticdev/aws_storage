@@ -120,7 +120,6 @@ def run(stackargs):
 
     stack.parse.add_optional(key="availability_zone",default="null")
     stack.parse.add_optional(key="instance_id",default="null")
-    stack.parse.add_optional(key="use_docker",default=True,null_allowed=True)
 
     # labels and tags
     stack.parse.add_optional(key="labels",default="null")
@@ -154,8 +153,6 @@ def run(stackargs):
     env_vars["ed_resource_settings_hash".upper()] = _ed_resource_settings.get()
     env_vars["aws_default_region".upper()] = stack.aws_default_region
     env_vars["docker_exec_env".upper()] = stack.docker_exec_env
-    env_vars["use_docker".upper()] = True
-    env_vars["CLOBBER"] = True
 
     inputargs = {"display":True}
     inputargs["env_vars"] = json.dumps(env_vars)
